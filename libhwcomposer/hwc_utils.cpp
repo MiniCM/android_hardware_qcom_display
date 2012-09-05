@@ -22,6 +22,7 @@
 #include "hwc_utils.h"
 #include "mdp_version.h"
 #include "hwc_video.h"
+#include "hwc_pip.h"
 #include "hwc_qbuf.h"
 #include "hwc_copybit.h"
 #include "hwc_external.h"
@@ -58,8 +59,16 @@ void initContext(hwc_context_t *ctx)
     property_get("debug.egl.swapinterval", value, "1");
     ctx->swapInterval = atoi(value);
 
+    //Initialize dyn threshold to 2.0
+    //system property can override this value
+    ctx->dynThreshold = 2.0;
+
+    property_get("debug.hwc.dynThreshold", value, "2");
+    ctx->dynThreshold = atof(value);
+
     ALOGI("Initializing Qualcomm Hardware Composer");
     ALOGI("MDP version: %d", ctx->mMDP.version);
+    ALOGI("DYN composition threshold : %f", ctx->dynThreshold);
 }
 
 void closeContext(hwc_context_t *ctx)
@@ -114,6 +123,7 @@ void getLayerStats(hwc_context_t *ctx, const hwc_layer_list_t *list)
     //Video specific stats
     int yuvCount = 0;
     int yuvLayerIndex = -1;
+    int pipLayerIndex = -1; //2nd video in pip scenario
     bool isYuvLayerSkip = false;
     int skipCount = 0;
     int ccLayerIndex = -1; //closed caption
@@ -127,7 +137,16 @@ void getLayerStats(hwc_context_t *ctx, const hwc_layer_list_t *list)
 
         if (UNLIKELY(isYuvBuffer(hnd))) {
             yuvCount++;
-            yuvLayerIndex = i;
+            if(yuvCount==1) {
+                //Set the primary video to the video layer in
+                //lower z-order
+                yuvLayerIndex = i;
+            }
+            if(yuvCount == 2) {
+                //In case of two videos, set the pipLayerIndex to the
+                //second video
+                pipLayerIndex = i;
+            }
             //Animating
             if (isSkipLayer(&list->hwLayers[i])) {
                 isYuvLayerSkip = true;
@@ -153,6 +172,8 @@ void getLayerStats(hwc_context_t *ctx, const hwc_layer_list_t *list)
 
     VideoOverlay::setStats(yuvCount, yuvLayerIndex, isYuvLayerSkip,
             ccLayerIndex);
+    VideoPIP::setStats(yuvCount, yuvLayerIndex, isYuvLayerSkip,
+            pipLayerIndex);
     ExtOnly::setStats(extCount, extLayerIndex, isExtBlockPresent);
     CopyBit::setStats(yuvCount, yuvLayerIndex, isYuvLayerSkip);
     MDPComp::setStats(skipCount);

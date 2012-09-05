@@ -293,6 +293,8 @@ enum eMdpFlags {
     OV_MDP_SECURE_OVERLAY_SESSION = MDP_SECURE_OVERLAY_SESSION,
     OV_MDP_SOURCE_ROTATED_90 = MDP_SOURCE_ROTATED_90,
     OV_MDP_MEMORY_ID_TYPE_FB = MDP_MEMORY_ID_TYPE_FB,
+    OV_MDP_BACKEND_COMPOSITION = MDP_BACKEND_COMPOSITION,
+    OV_MDP_BLEND_FG_PREMULT = MDP_BLEND_FG_PREMULT,
 };
 
 enum eZorder {
@@ -388,6 +390,9 @@ enum eOverlayState{
     /* 3D Video on two displays (panel and TV) */
     OV_3D_VIDEO_ON_2D_PANEL_2D_TV,
 
+    /* PIP, two videos on TV or primary panel */
+    OV_2D_PIP_VIDEO_ON_PANEL,
+
     /* UI Mirroring */
     OV_UI_MIRROR,
     OV_2D_TRUE_UI_MIRROR,
@@ -474,7 +479,7 @@ int getRotOutFmt(uint32_t format);
  * rotation is 90, 180 etc
  * It returns MDP related enum/define that match rot+flip*/
 int getMdpOrient(eTransform rotation);
-const char* getFormatString(uint32_t format);
+const char* getFormatString(int format);
 const char* getStateString(eOverlayState state);
 
 // Cannot use HW_OVERLAY_MAGNIFICATION_LIMIT, since at the time
@@ -575,7 +580,7 @@ inline bool isValidDest(eDest dest)
     return false;
 }
 
-inline const char* getFormatString(uint32_t format){
+inline const char* getFormatString(int format){
     static const char* const formats[] = {
         "MDP_RGB_565",
         "MDP_XRGB_8888",
@@ -607,8 +612,10 @@ inline const char* getFormatString(uint32_t format){
         "MDP_FB_FORMAT",
         "MDP_IMGTYPE_LIMIT2"
     };
-    OVASSERT(format < sizeof(formats) / sizeof(formats[0]),
-            "getFormatString wrong fmt %d", format);
+    if(format < 0 || format >= (int)(sizeof(formats) / sizeof(formats[0]))) {
+        ALOGE("%s wrong fmt %d", __FUNCTION__, format);
+        return "Unsupported format";
+    }
     return formats[format];
 }
 
@@ -630,6 +637,8 @@ inline const char* getStateString(eOverlayState state){
             return "OV_3D_VIDEO_ON_3D_TV";
         case OV_3D_VIDEO_ON_2D_PANEL_2D_TV:
             return "OV_3D_VIDEO_ON_2D_PANEL_2D_TV";
+        case OV_2D_PIP_VIDEO_ON_PANEL:
+            return "OV_2D_PIP_VIDEO_ON_PANEL";
         case OV_UI_MIRROR:
             return "OV_UI_MIRROR";
         case OV_2D_TRUE_UI_MIRROR:
