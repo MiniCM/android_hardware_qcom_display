@@ -110,7 +110,12 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
         } else { // Else set this flag to false, otherwise video cases
                  // fail in non-overlay targets.
             ctx->overlayInUse = false;
+            ctx->mOverlay->setState(ovutils::OV_CLOSED);
         }
+    } else {
+        ctx->overlayInUse = false;
+        ctx->mOverlay->setState(ovutils::OV_CLOSED);
+        ctx->qbuf->unlockAll();
     }
 
     return 0;
@@ -182,21 +187,21 @@ static int hwc_set(hwc_composer_device_t *dev,
             MDPComp::draw(ctx, list);
         }
         eglSwapBuffers((EGLDisplay)dpy, (EGLSurface)sur);
-        wait4fbPost(ctx);
-        //Can draw to HDMI only when fb_post is reached
-        UIMirrorOverlay::draw(ctx);
-        //HDMI commit and primary commit (PAN) happening in parallel
-        if(ctx->mExtDisplay->getExternalDisplay())
-            ctx->mExtDisplay->commit();
-        //Virtual barrier for threads to finish
-        wait4Pan(ctx);
+        if (ctx->mMDP.hasOverlay) {
+            wait4fbPost(ctx);
+            //Can draw to HDMI only when fb_post is reached
+            UIMirrorOverlay::draw(ctx);
+            //HDMI commit and primary commit (PAN) happening in parallel
+            if(ctx->mExtDisplay->getExternalDisplay())
+                ctx->mExtDisplay->commit();
+            //Virtual barrier for threads to finish
+            wait4Pan(ctx);
+        }
     } else {
         ctx->mOverlay->setState(ovutils::OV_CLOSED);
         ctx->qbuf->unlockAll();
     }
 
-    if(!ctx->overlayInUse)
-        ctx->mOverlay->setState(ovutils::OV_CLOSED);
 
     ctx->qbuf->unlockAllPrevious();
     return ret;
