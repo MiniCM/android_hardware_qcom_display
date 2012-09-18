@@ -34,6 +34,7 @@
 #include "hwc_external.h"
 #include "hwc_mdpcomp.h"
 #include "hwc_extonly.h"
+#include "qcom_ui.h"
 
 using namespace qhwc;
 
@@ -116,6 +117,8 @@ static int hwc_prepare(hwc_composer_device_t *dev, hwc_layer_list_t* list)
         ctx->overlayInUse = false;
         ctx->mOverlay->setState(ovutils::OV_CLOSED);
         ctx->qbuf->unlockAll();
+
+        qdutils::CBUtils::checkforGPULayer(list);
     }
 
     return 0;
@@ -134,7 +137,8 @@ static int hwc_eventControl(struct hwc_composer_device* dev,
             if(ioctl(m->framebuffer->fd, MSMFB_OVERLAY_VSYNC_CTRL, &value) < 0)
                 ret = -errno;
 
-            if(ctx->mExtDisplay->getExternalDisplay()) {
+            if(ctx->mExtDisplay->isHDMIConfigured() &&
+                 (ctx->mExtDisplay->getExternalDisplay()==EXTERN_DISPLAY_FB1)) {
                 ret = ctx->mExtDisplay->enableHDMIVsync(value);
             }
            break;

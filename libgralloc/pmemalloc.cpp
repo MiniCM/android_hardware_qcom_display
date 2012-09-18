@@ -127,13 +127,13 @@ PmemUserspaceAlloc::~PmemUserspaceAlloc()
 
 int PmemUserspaceAlloc::init_pmem_area_locked()
 {
-    ALOGD("%s: Opening master pmem FD", __FUNCTION__);
+    ALOGV("%s: Opening master pmem FD", __FUNCTION__);
     int err = 0;
     int fd = open(mPmemDev, O_RDWR, 0);
     if (fd >= 0) {
         size_t size = 0;
         err = getPmemTotalSize(fd, &size);
-        ALOGD("%s: Total pmem size: %d", __FUNCTION__, size);
+        ALOGV("%s: Total pmem size: %d", __FUNCTION__, size);
         if (err < 0) {
             ALOGE("%s: PMEM_GET_TOTAL_SIZE failed (%d), limp mode", mPmemDev,
                   err);
@@ -168,7 +168,7 @@ int  PmemUserspaceAlloc::init_pmem_area()
     int err = mMasterFd;
     if (err == FD_INIT) {
         // first time, try to initialize pmem
-        ALOGD("%s: Initializing pmem area", __FUNCTION__);
+        ALOGV("%s: Initializing pmem area", __FUNCTION__);
         err = init_pmem_area_locked();
         if (err) {
             ALOGE("%s: failed to initialize pmem area", mPmemDev);
