@@ -21,7 +21,6 @@
 #define DEBUG_COPYBIT 0
 #include <copybit.h>
 #include <genlock.h>
-#include <GLES/gl.h>
 #include "hwc_copybit.h"
 #include "comptype.h"
 #include "egl_handles.h"
